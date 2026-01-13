@@ -1,109 +1,102 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<title>可愛九九乘法遊戲</title>
+<meta charset="UTF-8">
+<title>可愛99乘法遊戲</title>
 
 <style>
 body {
   margin: 0;
-  font-family: "Comic Sans MS", "Noto Sans TC", sans-serif;
-  background: linear-gradient(#ffe6f2, #fff);
+  font-family: "Comic Sans MS";
+  background: linear-gradient(#ffe6f0, #fff);
   text-align: center;
 }
 
-h1 {
-  color: #ff69b4;
+/* ====== 角色 ====== */
+#girl {
+  width: 140px;
+  margin: 10px auto;
+  transition: transform 0.3s;
 }
 
-#game {
-  max-width: 420px;
-  margin: auto;
-  padding: 10px;
+/* 答對：跳一下 */
+.jump {
+  animation: jump 0.4s;
 }
 
-#fall-area {
-  height: 120px;
-  font-size: 48px;
-  color: #ff4081;
+/* 答錯：搖頭 */
+.shake {
+  animation: shake 0.4s;
 }
 
-#number {
-  animation: fall 2s linear;
-}
-
-@keyframes fall {
-  from { transform: translateY(-80px); }
-  to { transform: translateY(60px); }
-}
-
-#choices {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-}
-
-.choice {
-  padding: 12px;
-  font-size: 18px;
-  border-radius: 20px;
-  border: none;
-  background: #ffb6c1;
-}
-
-#character img {
-  width: 120px;
-  margin-top: 10px;
+/* 通關：跳舞 */
+.dance {
+  animation: dance 0.6s infinite;
 }
 
 @keyframes jump {
   0% { transform: translateY(0); }
-  50% { transform: translateY(-30px) rotate(10deg); }
+  50% { transform: translateY(-30px); }
   100% { transform: translateY(0); }
+}
+
+@keyframes shake {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+  75% { transform: rotate(-10deg); }
+  100% { transform: rotate(0); }
+}
+
+@keyframes dance {
+  0% { transform: rotate(0) translateY(0); }
+  25% { transform: rotate(-10deg) translateY(-10px); }
+  50% { transform: rotate(10deg) translateY(0); }
+  75% { transform: rotate(-10deg) translateY(-10px); }
+  100% { transform: rotate(0) translateY(0); }
+}
+
+/* ====== 掉落區 ====== */
+#number {
+  font-size: 60px;
+  margin: 20px;
+}
+
+/* ====== 選項 ====== */
+.choice {
+  font-size: 22px;
+  margin: 8px;
+  padding: 12px 20px;
+  border-radius: 20px;
+  border: none;
+  background: #ffb6c1;
 }
 </style>
 </head>
 
 <body>
 
-<h1>🎀 九九乘法小遊戲 🎀</h1>
+<h2>🎀 99 乘法可愛挑戰 🎀</h2>
 
-<div id="game">
+<img id="girl" src="girl.png">
 
-  分數：<span id="score">300</span>　
-  ⏰ 時間：<span id="time">60</span>
-
-  <br><br>
-
-  難度：
-  <select id="level">
-    <option value="5">簡單</option>
-    <option value="9" selected>普通</option>
-    <option value="12">困難</option>
-  </select>
-
-  <div id="fall-area"></div>
-
-  <div id="choices"></div>
-
-  <p id="message"></p>
-
-  <div id="character">
-    <img src="girl.png" alt="小女孩角色">
-  </div>
-
+<div>
+  分數：<span id="score">300</span> |
+  時間：<span id="time">60</span>
 </div>
 
-<!-- 音效 -->
-<audio id="correct" src="correct.mp3"></audio>
-<audio id="wrong" src="wrong.mp3"></audio>
-<audio id="win" src="win.mp3"></audio>
+<select id="level">
+  <option value="5">簡單</option>
+  <option value="9">普通</option>
+</select>
+
+<div id="number"></div>
+<div id="choices"></div>
+<div id="message"></div>
 
 <script>
 /* ===============================
-   遊戲狀態
+   基本狀態
 ================================ */
 let score = 300;
 let time = 60;
@@ -112,50 +105,32 @@ let gameOver = false;
 let timer;
 
 /* ===============================
-   初始化
+   音效
 ================================ */
-function initGame() {
-  score = 300;
-  time = 60;
-  gameOver = false;
+const sounds = {
+  correct: new Audio("correct.mp3"),
+  wrong: new Audio("wrong.mp3"),
+  win: new Audio("win.mp3")
+};
 
-  scoreEl.textContent = score;
-  timeEl.textContent = time;
-  message.textContent = "";
+/* ===============================
+   角色動畫工具
+================================ */
+const girl = document.getElementById("girl");
 
-  clearInterval(timer);
-  startTimer();
-  randomQuestion();
+function playAnimation(type) {
+  girl.className = "";
+  void girl.offsetWidth; // 強制重播動畫
+  girl.classList.add(type);
 }
 
 /* ===============================
-   DOM 快取
-================================ */
-const scoreEl = document.getElementById("score");
-const timeEl = document.getElementById("time");
-const levelEl = document.getElementById("level");
-const fallArea = document.getElementById("fall-area");
-const choices = document.getElementById("choices");
-const message = document.getElementById("message");
-const girl = document.querySelector("#character img");
-
-/* ===============================
-   音效
-================================ */
-const soundCorrect = document.getElementById("correct");
-const soundWrong = document.getElementById("wrong");
-const soundWin = document.getElementById("win");
-
-/* ===============================
-   計時
+   倒數計時
 ================================ */
 function startTimer() {
   timer = setInterval(() => {
-    if (gameOver) return;
-
     time--;
-    timeEl.textContent = time;
-
+    document.getElementById("time").textContent = time;
     if (time <= 0) endGame("時間到 ⏰");
   }, 1000);
 }
@@ -166,33 +141,28 @@ function startTimer() {
 function randomQuestion() {
   if (gameOver) return;
 
-  fallArea.innerHTML = "";
-  choices.innerHTML = "";
+  document.getElementById("choices").innerHTML = "";
 
-  const max = Number(levelEl.value);
-  const a = Math.floor(Math.random() * max) + 1;
-  const b = Math.floor(Math.random() * max) + 1;
+  let max = document.getElementById("level").value;
+  let a = Math.floor(Math.random() * max) + 1;
+  let b = Math.floor(Math.random() * max) + 1;
 
   correctAnswer = `${a} × ${b}`;
+  document.getElementById("number").textContent = a * b;
 
-  const num = document.createElement("div");
-  num.id = "number";
-  num.textContent = a * b;
-  fallArea.appendChild(num);
-
-  const answerSet = new Set([correctAnswer]);
-  while (answerSet.size < 4) {
-    const x = Math.floor(Math.random() * max) + 1;
-    const y = Math.floor(Math.random() * max) + 1;
-    answerSet.add(`${x} × ${y}`);
+  let answers = new Set([correctAnswer]);
+  while (answers.size < 5) {
+    let x = Math.floor(Math.random() * max) + 1;
+    let y = Math.floor(Math.random() * max) + 1;
+    answers.add(`${x} × ${y}`);
   }
 
-  [...answerSet].sort(() => Math.random() - 0.5).forEach(ans => {
-    const btn = document.createElement("button");
+  [...answers].sort(() => Math.random() - 0.5).forEach(ans => {
+    let btn = document.createElement("button");
     btn.className = "choice";
     btn.textContent = ans;
     btn.onclick = () => checkAnswer(ans);
-    choices.appendChild(btn);
+    document.getElementById("choices").appendChild(btn);
   });
 }
 
@@ -204,52 +174,41 @@ function checkAnswer(ans) {
 
   if (ans === correctAnswer) {
     score += 100;
-    soundCorrect.play();
+    sounds.correct.play();
+    playAnimation("jump");
   } else {
     score -= 100;
-    soundWrong.play();
+    sounds.wrong.play();
+    playAnimation("shake");
   }
 
-  scoreEl.textContent = score;
+  document.getElementById("score").textContent = score;
 
-  if (score <= 0) endGame("失敗了 😭");
-  else if (score >= 1300) {
-    soundWin.play();
-    girlCelebrate();
-    endGame("🎉 通關成功！");
-  } else randomQuestion();
+  if (score >= 1300) {
+    sounds.win.play();
+    playAnimation("dance");
+    endGame("通關成功 🎉");
+  } else if (score <= 0) {
+    endGame("失敗了 😭");
+  } else {
+    setTimeout(randomQuestion, 400);
+  }
 }
 
 /* ===============================
    結束
 ================================ */
-function endGame(text) {
+function endGame(msg) {
   gameOver = true;
   clearInterval(timer);
-
-  message.textContent = text;
-  choices.innerHTML = `
-    <button class="choice" onclick="initGame()">🔄 重新開始</button>
-  `;
+  document.getElementById("message").textContent = msg;
 }
-
-/* ===============================
-   小女孩動畫
-================================ */
-function girlCelebrate() {
-  girl.style.animation = "jump 0.8s";
-  setTimeout(() => girl.style.animation = "", 800);
-}
-
-/* ===============================
-   難度即時生效
-================================ */
-levelEl.addEventListener("change", randomQuestion);
 
 /* ===============================
    啟動
 ================================ */
-initGame();
+startTimer();
+randomQuestion();
 </script>
 
 </body>
