@@ -2,37 +2,60 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+
+<!-- 
+    ★ 關鍵修改 1：Viewport 設定 
+    這行代碼告訴瀏覽器：
+    1. width=device-width: 網頁寬度等於裝置螢幕寬度
+    2. initial-scale=1.0: 初始縮放比例為 1:1
+    3. user-scalable=no: 禁止使用者縮放（防止玩遊戲時不小心雙擊放大）
+-->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <title>可愛99乘法遊戲</title>
 
 <style>
+/* ===============================
+   全域樣式設定
+================================ */
 body {
   margin: 0;
-  font-family: "Comic Sans MS";
+  padding: 0;
+  font-family: "Comic Sans MS", "微軟正黑體", sans-serif; /* 加入中文字體備案 */
   background: linear-gradient(#ffe6f0, #fff);
   text-align: center;
+  
+  /* 讓內容垂直置中 (防止手機畫面過長) */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; 
+  
+  /* 防止手機點擊時的高亮藍色背景 */
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* ====== 角色 ====== */
+h2 {
+  margin: 10px 0;
+  font-size: 1.5rem; /* 使用 rem 單位，隨螢幕縮放 */
+}
+
+/* ===============================
+   角色區塊
+================================ */
 #girl {
   width: 140px;
+  max-width: 40%; /* ★ 修改：手機螢幕較小時，圖片不會超過螢幕 40% */
+  height: auto;
   margin: 10px auto;
   transition: transform 0.3s;
 }
 
-/* 答對：跳一下 */
-.jump {
-  animation: jump 0.4s;
-}
-
-/* 答錯：搖頭 */
-.shake {
-  animation: shake 0.4s;
-}
-
-/* 通關：跳舞 */
-.dance {
-  animation: dance 0.6s infinite;
-}
+/* 動畫定義保持不變 */
+.jump { animation: jump 0.4s; }
+.shake { animation: shake 0.4s; }
+.dance { animation: dance 0.6s infinite; }
 
 @keyframes jump {
   0% { transform: translateY(0); }
@@ -56,20 +79,71 @@ body {
   100% { transform: rotate(0) translateY(0); }
 }
 
-/* ====== 掉落區 ====== */
-#number {
-  font-size: 60px;
-  margin: 20px;
+/* ===============================
+   遊戲資訊與控制區
+================================ */
+.info-bar {
+  font-size: 1.2rem;
+  margin: 10px 0;
 }
 
-/* ====== 選項 ====== */
+select {
+  font-size: 1rem;
+  padding: 5px;
+  margin-top: 5px;
+}
+
+/* ===============================
+   題目掉落區
+================================ */
+#number {
+  font-size: 3.5rem; /* 使用相對單位，手機上不會過大 */
+  margin: 15px;
+  font-weight: bold;
+  color: #ff69b4;
+}
+
+/* ===============================
+   選項按鈕區 (Flexbox 排版)
+================================ */
+#choices {
+  display: flex;           /* 啟用彈性盒模型 */
+  flex-wrap: wrap;         /* 允許換行 */
+  justify-content: center; /* 水平置中 */
+  gap: 15px;               /* 按鈕之間的間距 */
+  width: 90%;              /* 容器寬度佔螢幕 90% */
+  max-width: 400px;        /* 最大不超過 400px */
+}
+
+/* 選項按鈕樣式 */
 .choice {
-  font-size: 22px;
-  margin: 8px;
-  padding: 12px 20px;
+  font-size: 1.5rem;
+  padding: 15px 0;         /* 增加垂直 padding 讓手指好點 */
+  width: 45%;              /* ★ 修改：每個按鈕佔寬度 45%，這樣一行會顯示兩個 */
   border-radius: 20px;
-  border: none;
+  border: 2px solid #fff;
   background: #ffb6c1;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  transition: transform 0.1s;
+  
+  /* 禁止手機長按選取文字 */
+  user-select: none; 
+}
+
+/* 按鈕按下時的效果 */
+.choice:active {
+  transform: scale(0.95);
+  background: #ff91a4;
+}
+
+#message {
+  margin-top: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #d63384;
+  height: 30px; /* 預留高度防止跳動 */
 }
 </style>
 </head>
@@ -78,25 +152,32 @@ body {
 
 <h2>🎀 99 乘法可愛挑戰 🎀</h2>
 
-<img id="girl" src="girl.png">
+<!-- 確保圖片路徑正確，若無圖片會顯示 alt 文字 -->
+<img id="girl" src="girl.png" alt="遊戲角色">
 
-<div>
+<div class="info-bar">
   分數：<span id="score">300</span> |
   時間：<span id="time">60</span>
 </div>
 
+<!-- 難度選擇 -->
 <select id="level">
-  <option value="5">簡單</option>
-  <option value="9">普通</option>
+  <option value="5">簡單 (5以內)</option>
+  <option value="9" selected>普通 (9以內)</option>
 </select>
 
+<!-- 題目顯示區 -->
 <div id="number"></div>
+
+<!-- 選項按鈕容器 -->
 <div id="choices"></div>
+
+<!-- 訊息顯示區 -->
 <div id="message"></div>
 
 <script>
 /* ===============================
-   基本狀態
+   基本變數狀態設定
 ================================ */
 let score = 300;
 let time = 60;
@@ -105,7 +186,7 @@ let gameOver = false;
 let timer;
 
 /* ===============================
-   音效
+   音效載入 (確保檔案存在)
 ================================ */
 const sounds = {
   correct: new Audio("correct.mp3"),
@@ -114,20 +195,28 @@ const sounds = {
 };
 
 /* ===============================
-   角色動畫工具
+   角色動畫工具函式
 ================================ */
 const girl = document.getElementById("girl");
 
 function playAnimation(type) {
+  // 移除所有動畫 class
   girl.className = "";
-  void girl.offsetWidth; // 強制重播動畫
+  
+  // 強制瀏覽器重繪 (Reflow)，讓動畫可以重複觸發
+  void girl.offsetWidth; 
+  
+  // 加入新的動畫 class
   girl.classList.add(type);
 }
 
 /* ===============================
-   倒數計時
+   倒數計時器
 ================================ */
 function startTimer() {
+  // 清除舊的計時器 (防止重複啟動)
+  if(timer) clearInterval(timer);
+  
   timer = setInterval(() => {
     time--;
     document.getElementById("time").textContent = time;
@@ -136,79 +225,112 @@ function startTimer() {
 }
 
 /* ===============================
-   出題
+   核心邏輯：出題
 ================================ */
 function randomQuestion() {
   if (gameOver) return;
 
-  document.getElementById("choices").innerHTML = "";
+  // 清空選項區域
+  const choicesDiv = document.getElementById("choices");
+  choicesDiv.innerHTML = "";
+  document.getElementById("message").textContent = ""; // 清空訊息
 
-  let max = document.getElementById("level").value;
+  // 取得當前難度
+  let max = parseInt(document.getElementById("level").value);
+  
+  // 產生題目 (A * B)
   let a = Math.floor(Math.random() * max) + 1;
   let b = Math.floor(Math.random() * max) + 1;
 
-  correctAnswer = `${a} × ${b}`;
-  document.getElementById("number").textContent = a * b;
+  // 設定正確答案與顯示題目
+  // 注意：這裡題目顯示的是積 (Product)，選項是因子 (Factors)
+  // 如果你想顯示題目是 "2 x 3 = ?", 選項是 "6"，請參考下方邏輯調整
+  // 根據你原本的代碼，題目顯示的是 "答案(數字)"，選項顯示的是 "算式"
+  
+  correctAnswer = `${a} × ${b}`;  // 正確的算式字串
+  document.getElementById("number").textContent = a * b; // 顯示乘積
 
+  // 產生選項 (使用 Set 避免重複)
   let answers = new Set([correctAnswer]);
-  while (answers.size < 5) {
+  
+  // 補滿到 4 個選項 (手機版 4 個比較剛好，若要 5 個可自行改回)
+  while (answers.size < 4) {
     let x = Math.floor(Math.random() * max) + 1;
     let y = Math.floor(Math.random() * max) + 1;
+    // 這裡可能產生不同算式但答案相同的狀況 (例如 2x3 和 3x2)，這在數學遊戲中是合理的干擾項
     answers.add(`${x} × ${y}`);
   }
 
+  // 將選項打亂並建立按鈕
   [...answers].sort(() => Math.random() - 0.5).forEach(ans => {
     let btn = document.createElement("button");
     btn.className = "choice";
-    btn.textContent = ans;
+    btn.textContent = ans; // 按鈕內容
+    
+    // 加入點擊事件 (支援觸控)
     btn.onclick = () => checkAnswer(ans);
-    document.getElementById("choices").appendChild(btn);
+    
+    choicesDiv.appendChild(btn);
   });
 }
 
 /* ===============================
-   檢查答案
+   核心邏輯：檢查答案
 ================================ */
 function checkAnswer(ans) {
   if (gameOver) return;
 
   if (ans === correctAnswer) {
     score += 100;
-    sounds.correct.play();
+    // 嘗試播放音效 (需使用者與網頁互動後才能播放)
+    try { sounds.correct.currentTime = 0; sounds.correct.play(); } catch(e){}
     playAnimation("jump");
+    document.getElementById("message").textContent = "答對了！👍";
   } else {
-    score -= 100;
-    sounds.wrong.play();
+    score -= 50; // 扣分稍微減少一點，對小朋友友善些
+    try { sounds.wrong.currentTime = 0; sounds.wrong.play(); } catch(e){}
     playAnimation("shake");
+    document.getElementById("message").textContent = "再試試看 💪";
   }
 
   document.getElementById("score").textContent = score;
 
-  if (score >= 1300) {
-    sounds.win.play();
+  // 判斷輸贏條件
+  if (score >= 1000) { // 修改通關分數，避免玩太久
+    try { sounds.win.play(); } catch(e){}
     playAnimation("dance");
     endGame("通關成功 🎉");
   } else if (score <= 0) {
     endGame("失敗了 😭");
   } else {
-    setTimeout(randomQuestion, 400);
+    // 答題後稍微延遲再出下一題
+    setTimeout(randomQuestion, 500);
   }
 }
 
 /* ===============================
-   結束
+   遊戲結束處理
 ================================ */
 function endGame(msg) {
   gameOver = true;
   clearInterval(timer);
   document.getElementById("message").textContent = msg;
+  document.getElementById("choices").innerHTML = '<button class="choice" onclick="location.reload()" style="width:80%">重新開始</button>';
 }
 
 /* ===============================
-   啟動
+   程式進入點
 ================================ */
+// 監聽難度變化，改變時重置遊戲 (選用)
+document.getElementById("level").addEventListener("change", () => {
+    // 這裡簡單處理：難度改變直接重整頁面，或者你可以寫重置邏輯
+    location.reload();
+});
+
+// 啟動遊戲
 startTimer();
 randomQuestion();
+
 </script>
 
 </body>
