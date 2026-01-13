@@ -1,0 +1,138 @@
+<script>
+/* ===============================
+   遊戲基本狀態變數
+================================ */
+let score = 300;          // 起始分數
+let time = 60;            // 倒數秒數
+let correctAnswer = "";   // 正確答案
+let gameOver = false;     // 遊戲是否結束
+let timer = null;         // 計時器
+
+/* ===============================
+   音效設定（使用實體 mp3）
+   注意：音效必須在「使用者點擊後」才會播放
+================================ */
+const sounds = {
+  correct: new Audio("correct.mp3"), // 答對音效
+  wrong: new Audio("wrong.mp3"),     // 答錯音效
+  win: new Audio("win.mp3")          // 通關音效
+};
+
+/* ===============================
+   啟動倒數計時
+================================ */
+function startTimer() {
+  timer = setInterval(() => {
+    time--;
+    document.getElementById("time").textContent = time;
+
+    // 時間到，遊戲結束
+    if (time <= 0) {
+      endGame("時間到 ⏰");
+    }
+  }, 1000);
+}
+
+/* ===============================
+   產生新的乘法題目
+================================ */
+function randomQuestion() {
+  if (gameOver) return;
+
+  // 清空畫面
+  document.getElementById("fall-area").innerHTML = "";
+  document.getElementById("choices").innerHTML = "";
+
+  // 依難度設定最大數字
+  let max = document.getElementById("level").value;
+  let a = Math.floor(Math.random() * max) + 1;
+  let b = Math.floor(Math.random() * max) + 1;
+
+  let result = a * b;
+  correctAnswer = `${a} × ${b}`;
+
+  // 顯示掉落數字
+  let num = document.createElement("div");
+  num.id = "number";
+  num.textContent = result;
+  document.getElementById("fall-area").appendChild(num);
+
+  // 建立選項（包含正確答案）
+  let answers = new Set([correctAnswer]);
+
+  while (answers.size < 5) {
+    let x = Math.floor(Math.random() * max) + 1;
+    let y = Math.floor(Math.random() * max) + 1;
+    answers.add(`${x} × ${y}`);
+  }
+
+  // 隨機排序並顯示按鈕
+  [...answers].sort(() => Math.random() - 0.5).forEach(ans => {
+    let btn = document.createElement("button");
+    btn.className = "choice";
+    btn.textContent = ans;
+    btn.onclick = () => checkAnswer(ans);
+    document.getElementById("choices").appendChild(btn);
+  });
+}
+
+/* ===============================
+   檢查答案
+================================ */
+function checkAnswer(ans) {
+  if (gameOver) return;
+
+  if (ans === correctAnswer) {
+    score += 100;
+    sounds.correct.play(); // 播放答對音效
+  } else {
+    score -= 100;
+    sounds.wrong.play();   // 播放答錯音效
+  }
+
+  document.getElementById("score").textContent = score;
+
+  // 判斷勝敗
+  if (score <= 0) {
+    endGame("失敗了 😭");
+  } else if (score >= 1300) {
+    sounds.win.play();     // 播放通關音效
+    endGame("通關成功 🎉");
+    fireworks();
+  } else {
+    randomQuestion();
+  }
+}
+
+/* ===============================
+   結束遊戲
+================================ */
+function endGame(text) {
+  gameOver = true;
+  clearInterval(timer);
+  document.getElementById("message").textContent = text;
+  document.getElementById("choices").innerHTML = "";
+}
+
+/* ===============================
+   通關煙火效果
+================================ */
+function fireworks() {
+  for (let i = 0; i < 80; i++) {
+    let f = document.createElement("div");
+    f.className = "firework";
+    f.style.left = "50%";
+    f.style.top = "50%";
+    f.style.setProperty("--x", `${Math.random()*400-200}px`);
+    f.style.setProperty("--y", `${Math.random()*400-200}px`);
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 1000);
+  }
+}
+
+/* ===============================
+   啟動遊戲
+================================ */
+startTimer();
+randomQuestion();
+</script>
