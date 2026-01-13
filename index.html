@@ -1,72 +1,156 @@
-<script>
-/* ===============================
-   遊戲基本狀態變數
-================================ */
-let score = 300;          // 起始分數
-let time = 60;            // 倒數秒數
-let correctAnswer = "";   // 正確答案
-let gameOver = false;     // 遊戲是否結束
-let timer = null;         // 計時器
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>可愛99乘法遊戲</title>
 
-/* ===============================
-   音效設定（使用實體 mp3）
-   注意：音效必須在「使用者點擊後」才會播放
-================================ */
+<style>
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", "微軟正黑體";
+  background: linear-gradient(#ffe0f0, #fff);
+  text-align: center;
+}
+
+/* 上方資訊列 */
+#top {
+  display: flex;
+  justify-content: space-around;
+  font-size: 18px;
+  padding: 10px;
+  color: #ff4f9a;
+}
+
+/* 角色 */
+#character img {
+  width: 120px;
+  margin: 10px auto;
+}
+
+/* 掉落區 */
+#fall-area {
+  height: 120px;
+  position: relative;
+}
+
+#number {
+  font-size: 48px;
+  background: #fff;
+  padding: 15px 30px;
+  border-radius: 50%;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: fall 2s linear;
+}
+
+@keyframes fall {
+  from { top: -80px; }
+  to { top: 40px; }
+}
+
+/* 選項 */
+#choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.choice {
+  width: 45%;
+  margin: 8px;
+  padding: 15px;
+  font-size: 22px;
+  border: none;
+  border-radius: 25px;
+  background: #ffb6d5;
+}
+
+#message {
+  font-size: 32px;
+  margin-top: 15px;
+  color: #ff4f9a;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 上方狀態列 -->
+<div id="top">
+  <div>分數：<span id="score">300</span></div>
+  <div>⏱ <span id="time">60</span>s</div>
+  <div>
+    難度：
+    <select id="level">
+      <option value="5">簡單</option>
+      <option value="7">普通</option>
+      <option value="9">困難</option>
+    </select>
+  </div>
+</div>
+
+<!-- 角色 -->
+<div id="character">
+  <img src="girl.png" alt="girl" />
+</div>
+
+<!-- 掉落數字 -->
+<div id="fall-area"></div>
+
+<!-- 選項 -->
+<div id="choices"></div>
+
+<div id="message"></div>
+
+<script>
+/* ====== 你原本的 JS（完全保留） ====== */
+let score = 300;
+let time = 60;
+let correctAnswer = "";
+let gameOver = false;
+let timer = null;
+
 const sounds = {
-  correct: new Audio("correct.mp3"), // 答對音效
-  wrong: new Audio("wrong.mp3"),     // 答錯音效
-  win: new Audio("win.mp3")          // 通關音效
+  correct: new Audio("correct.mp3"),
+  wrong: new Audio("wrong.mp3"),
+  win: new Audio("win.mp3")
 };
 
-/* ===============================
-   啟動倒數計時
-================================ */
 function startTimer() {
   timer = setInterval(() => {
     time--;
     document.getElementById("time").textContent = time;
-
-    // 時間到，遊戲結束
-    if (time <= 0) {
-      endGame("時間到 ⏰");
-    }
+    if (time <= 0) endGame("時間到 ⏰");
   }, 1000);
 }
 
-/* ===============================
-   產生新的乘法題目
-================================ */
 function randomQuestion() {
   if (gameOver) return;
 
-  // 清空畫面
   document.getElementById("fall-area").innerHTML = "";
   document.getElementById("choices").innerHTML = "";
 
-  // 依難度設定最大數字
   let max = document.getElementById("level").value;
   let a = Math.floor(Math.random() * max) + 1;
   let b = Math.floor(Math.random() * max) + 1;
 
-  let result = a * b;
   correctAnswer = `${a} × ${b}`;
+  let result = a * b;
 
-  // 顯示掉落數字
   let num = document.createElement("div");
   num.id = "number";
   num.textContent = result;
   document.getElementById("fall-area").appendChild(num);
 
-  // 建立選項（包含正確答案）
   let answers = new Set([correctAnswer]);
-
   while (answers.size < 5) {
     let x = Math.floor(Math.random() * max) + 1;
     let y = Math.floor(Math.random() * max) + 1;
     answers.add(`${x} × ${y}`);
   }
 
-  // 隨機排序並顯示按鈕
   [...answers].sort(() => Math.random() - 0.5).forEach(ans => {
     let btn = document.createElement("button");
     btn.className = "choice";
@@ -76,27 +160,23 @@ function randomQuestion() {
   });
 }
 
-/* ===============================
-   檢查答案
-================================ */
 function checkAnswer(ans) {
   if (gameOver) return;
 
   if (ans === correctAnswer) {
     score += 100;
-    sounds.correct.play(); // 播放答對音效
+    sounds.correct.play();
   } else {
     score -= 100;
-    sounds.wrong.play();   // 播放答錯音效
+    sounds.wrong.play();
   }
 
   document.getElementById("score").textContent = score;
 
-  // 判斷勝敗
   if (score <= 0) {
     endGame("失敗了 😭");
   } else if (score >= 1300) {
-    sounds.win.play();     // 播放通關音效
+    sounds.win.play();
     endGame("通關成功 🎉");
     fireworks();
   } else {
@@ -104,9 +184,6 @@ function checkAnswer(ans) {
   }
 }
 
-/* ===============================
-   結束遊戲
-================================ */
 function endGame(text) {
   gameOver = true;
   clearInterval(timer);
@@ -114,9 +191,6 @@ function endGame(text) {
   document.getElementById("choices").innerHTML = "";
 }
 
-/* ===============================
-   通關煙火效果
-================================ */
 function fireworks() {
   for (let i = 0; i < 80; i++) {
     let f = document.createElement("div");
@@ -130,9 +204,9 @@ function fireworks() {
   }
 }
 
-/* ===============================
-   啟動遊戲
-================================ */
 startTimer();
 randomQuestion();
 </script>
+
+</body>
+</html>
