@@ -1,34 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>可愛九九乘法遊戲</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: "Comic Sans MS", "Noto Sans TC", sans-serif;
+  background: linear-gradient(#ffe6f2, #fff);
+  text-align: center;
+}
+
+h1 {
+  color: #ff69b4;
+}
+
+#game {
+  max-width: 420px;
+  margin: auto;
+  padding: 10px;
+}
+
+#fall-area {
+  height: 120px;
+  font-size: 48px;
+  color: #ff4081;
+}
+
+#number {
+  animation: fall 2s linear;
+}
+
+@keyframes fall {
+  from { transform: translateY(-80px); }
+  to { transform: translateY(60px); }
+}
+
+#choices {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.choice {
+  padding: 12px;
+  font-size: 18px;
+  border-radius: 20px;
+  border: none;
+  background: #ffb6c1;
+}
+
+#character img {
+  width: 120px;
+  margin-top: 10px;
+}
+
+@keyframes jump {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-30px) rotate(10deg); }
+  100% { transform: translateY(0); }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎀 九九乘法小遊戲 🎀</h1>
+
+<div id="game">
+
+  分數：<span id="score">300</span>　
+  ⏰ 時間：<span id="time">60</span>
+
+  <br><br>
+
+  難度：
+  <select id="level">
+    <option value="5">簡單</option>
+    <option value="9" selected>普通</option>
+    <option value="12">困難</option>
+  </select>
+
+  <div id="fall-area"></div>
+
+  <div id="choices"></div>
+
+  <p id="message"></p>
+
+  <div id="character">
+    <img src="girl.png" alt="小女孩角色">
+  </div>
+
+</div>
+
+<!-- 音效 -->
+<audio id="correct" src="correct.mp3"></audio>
+<audio id="wrong" src="wrong.mp3"></audio>
+<audio id="win" src="win.mp3"></audio>
+
 <script>
 /* ===============================
-   遊戲狀態變數
+   遊戲狀態
 ================================ */
-let score = 300;        // 起始分數
-let time = 60;          // 倒數時間
-let correctAnswer = ""; // 正確答案
-let gameOver = false;   // 是否結束
-let timer = null;       // 計時器
+let score = 300;
+let time = 60;
+let correctAnswer = "";
+let gameOver = false;
+let timer;
 
 /* ===============================
-   音效設定
-================================ */
-const sounds = {
-  correct: new Audio("correct.mp3"),
-  wrong: new Audio("wrong.mp3"),
-  win: new Audio("win.mp3")
-};
-
-/* ===============================
-   初始化遊戲
+   初始化
 ================================ */
 function initGame() {
   score = 300;
   time = 60;
   gameOver = false;
 
-  document.getElementById("score").textContent = score;
-  document.getElementById("time").textContent = time;
-  document.getElementById("message").textContent = "";
-  document.getElementById("choices").innerHTML = "";
+  scoreEl.textContent = score;
+  timeEl.textContent = time;
+  message.textContent = "";
 
   clearInterval(timer);
   startTimer();
@@ -36,57 +129,65 @@ function initGame() {
 }
 
 /* ===============================
-   倒數計時
+   DOM 快取
+================================ */
+const scoreEl = document.getElementById("score");
+const timeEl = document.getElementById("time");
+const levelEl = document.getElementById("level");
+const fallArea = document.getElementById("fall-area");
+const choices = document.getElementById("choices");
+const message = document.getElementById("message");
+const girl = document.querySelector("#character img");
+
+/* ===============================
+   音效
+================================ */
+const soundCorrect = document.getElementById("correct");
+const soundWrong = document.getElementById("wrong");
+const soundWin = document.getElementById("win");
+
+/* ===============================
+   計時
 ================================ */
 function startTimer() {
   timer = setInterval(() => {
     if (gameOver) return;
 
     time--;
-    document.getElementById("time").textContent = time;
+    timeEl.textContent = time;
 
-    if (time <= 0) {
-      endGame("時間到 ⏰");
-    }
+    if (time <= 0) endGame("時間到 ⏰");
   }, 1000);
 }
 
 /* ===============================
-   出題（會依照當前難度）
+   出題
 ================================ */
 function randomQuestion() {
   if (gameOver) return;
 
-  const fallArea = document.getElementById("fall-area");
-  const choices = document.getElementById("choices");
-
   fallArea.innerHTML = "";
   choices.innerHTML = "";
 
-  // 即時讀取難度
-  const max = Number(document.getElementById("level").value);
-
+  const max = Number(levelEl.value);
   const a = Math.floor(Math.random() * max) + 1;
   const b = Math.floor(Math.random() * max) + 1;
-  const result = a * b;
 
   correctAnswer = `${a} × ${b}`;
 
-  // 顯示掉落數字
   const num = document.createElement("div");
   num.id = "number";
-  num.textContent = result;
+  num.textContent = a * b;
   fallArea.appendChild(num);
 
-  // 建立選項
-  const answers = new Set([correctAnswer]);
-  while (answers.size < 5) {
+  const answerSet = new Set([correctAnswer]);
+  while (answerSet.size < 4) {
     const x = Math.floor(Math.random() * max) + 1;
     const y = Math.floor(Math.random() * max) + 1;
-    answers.add(`${x} × ${y}`);
+    answerSet.add(`${x} × ${y}`);
   }
 
-  [...answers].sort(() => Math.random() - 0.5).forEach(ans => {
+  [...answerSet].sort(() => Math.random() - 0.5).forEach(ans => {
     const btn = document.createElement("button");
     btn.className = "choice";
     btn.textContent = ans;
@@ -103,58 +204,53 @@ function checkAnswer(ans) {
 
   if (ans === correctAnswer) {
     score += 100;
-    sounds.correct.play();
+    soundCorrect.play();
   } else {
     score -= 100;
-    sounds.wrong.play();
+    soundWrong.play();
   }
 
-  document.getElementById("score").textContent = score;
+  scoreEl.textContent = score;
 
-  if (score <= 0) {
-    endGame("失敗了 😭");
-  } else if (score >= 1300) {
-    sounds.win.play();
-    girlCelebrate();     // 小女孩動一下
-    endGame("通關成功 🎉");
-  } else {
-    randomQuestion();
-  }
+  if (score <= 0) endGame("失敗了 😭");
+  else if (score >= 1300) {
+    soundWin.play();
+    girlCelebrate();
+    endGame("🎉 通關成功！");
+  } else randomQuestion();
 }
 
 /* ===============================
-   遊戲結束
+   結束
 ================================ */
 function endGame(text) {
   gameOver = true;
   clearInterval(timer);
 
-  document.getElementById("choices").innerHTML = `
+  message.textContent = text;
+  choices.innerHTML = `
     <button class="choice" onclick="initGame()">🔄 重新開始</button>
   `;
-  document.getElementById("message").textContent = text;
 }
 
 /* ===============================
-   小女孩通關動畫
+   小女孩動畫
 ================================ */
 function girlCelebrate() {
-  const girl = document.querySelector("#character img");
-  girl.style.animation = "jump 0.8s ease";
+  girl.style.animation = "jump 0.8s";
   setTimeout(() => girl.style.animation = "", 800);
 }
 
 /* ===============================
-   難度切換即時生效
+   難度即時生效
 ================================ */
-document.getElementById("level").addEventListener("change", () => {
-  if (!gameOver) {
-    randomQuestion();
-  }
-});
+levelEl.addEventListener("change", randomQuestion);
 
 /* ===============================
-   啟動遊戲
+   啟動
 ================================ */
 initGame();
 </script>
+
+</body>
+</html>
